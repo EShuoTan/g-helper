@@ -4,6 +4,7 @@ using GHelper.Display;
 using GHelper.Gpu;
 using GHelper.Helpers;
 using GHelper.Input;
+using GHelper.IPC;
 using GHelper.Mode;
 using GHelper.Overlay;
 using GHelper.Peripherals;
@@ -226,7 +227,11 @@ namespace GHelper
             if (AppConfig.Is("overlay"))
                 hardwareOverlay?.StartOverlay();
 
+            PipeServer.Start();
+
             Application.Run();
+
+            PipeServer.Stop();
         }
 
 

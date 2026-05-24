@@ -368,3 +368,4 @@ FodyWeavers.xsd
 
 tools/
 app/*.lscache
+GHelper.exe
