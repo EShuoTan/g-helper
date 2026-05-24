@@ -20,7 +20,6 @@ param(
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectDir = Join-Path $scriptDir "..\app"
-$tempPublishDir = Join-Path $env:TEMP "ghelper-publish-$(Get-Date -Format 'yyyyMMddHHmmss')"
 
 function Write-Step {
     param([string]$Message)
@@ -73,12 +72,12 @@ try {
     Write-Step "Publishing $Configuration configuration for $Runtime"
     $publishArgs = @(
         "publish"
+        "$projectDir\GHelper.sln"
         "-c", $Configuration
         "-r", $Runtime
-        "--self-contained", "true"
         "-p:PublishSingleFile=true"
-        "-p:IncludeNativeLibrariesForSelfExtract=true"
-        "-o", $tempPublishDir
+        "--no-self-contained"
+        "-o", $OutputDir
     )
     
     Push-Location $projectDir
@@ -88,6 +87,11 @@ try {
     }
     Pop-Location
     Write-Success "Application published"
+    
+    $exeDestination = Join-Path $OutputDir "GHelper.exe"
+    if (-not (Test-Path $exeDestination)) {
+        Write-ErrorAndExit "Published executable not found: $exeDestination"
+    }
     
     # Stop GHelper process if running
     Write-Step "Stopping GHelper process if running"
@@ -100,28 +104,6 @@ try {
         Write-Host "GHelper process not running" -ForegroundColor Gray
     }
     
-    # Copy executable to output directory
-    Write-Step "Copying executable to $OutputDir"
-    $exeSource = Join-Path $tempPublishDir "GHelper.exe"
-    $exeDestination = Join-Path $OutputDir "GHelper.exe"
-    
-    if (-not (Test-Path $exeSource)) {
-        Write-ErrorAndExit "Published executable not found: $exeSource"
-    }
-    
-    # Create output directory if it doesn't exist
-    if (-not (Test-Path $OutputDir)) {
-        New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
-    }
-    
-    try {
-        Copy-Item $exeSource -Destination $exeDestination -Force
-        Write-Success "Executable copied to $exeDestination"
-    }
-    catch {
-        Write-ErrorAndExit "Failed to copy executable. Is GHelper still running? $_"
-    }
-    
     # Get file size for information
     $fileSize = (Get-Item $exeDestination).Length
     $fileSizeMB = [math]::Round($fileSize / 1MB, 2)
@@ -132,12 +114,4 @@ try {
 catch {
     Write-Host "`nBuild failed: $_" -ForegroundColor Red
     exit 1
-}
-finally {
-    # Clean up temporary directory
-    if (Test-Path $tempPublishDir) {
-        Write-Step "Cleaning up temporary files"
-        Remove-Item $tempPublishDir -Recurse -Force -ErrorAction SilentlyContinue
-        Write-Success "Temporary files removed"
-    }
 }
