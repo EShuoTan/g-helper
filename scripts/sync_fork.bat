@@ -23,6 +23,13 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo Pushing main to origin...
+git push origin main --force-with-lease
+if errorlevel 1 (
+    echo Failed to push main to origin
+    exit /b 1
+)
+
 git checkout feat/external-control
 if errorlevel 1 (
     echo Failed to checkout feat/external-control
