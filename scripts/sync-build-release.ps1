@@ -44,38 +44,16 @@ try {
         Write-ErrorAndExit "Cannot determine GitHub repository from origin remote"
     }
 
-    Write-Step "Fetching upstream"
-    git fetch upstream --tags
+    Write-Step "Syncing with upstream (calling sync_fork.bat)"
+    $syncScript = Join-Path $PSScriptRoot "sync_fork.bat"
+    & cmd /c $syncScript
     if ($LASTEXITCODE -ne 0) {
-        Write-ErrorAndExit "Failed to fetch upstream"
+        Write-ErrorAndExit "Sync failed"
     }
-
-    $upstreamMain = "upstream/main"
-    $localBranch = "feat/external-control"
-
-    Write-Step "Checking for upstream updates"
-    $upstreamHash = git rev-parse $upstreamMain
-    $localHash = git rev-parse HEAD
-    $mergeBase = git merge-base HEAD $upstreamMain
-
-    if ($upstreamHash -eq $mergeBase -and -not $Force) {
-        Write-Skip "No upstream updates found. Local is up to date."
-        exit 0
-    }
-
-    Write-Success "Upstream has new commits. Proceeding with sync..."
-
-    Write-Step "Rebasing onto upstream/main"
-    git rebase $upstreamMain
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Rebase failed. Aborting..." -ForegroundColor Red
-        git rebase --abort
-        Write-ErrorAndExit "Rebase failed. Please resolve conflicts manually."
-    }
-    Write-Success "Rebase completed"
+    Write-Success "Sync completed"
 
     Write-Step "Getting latest upstream tag"
-    $latestTag = git describe --tags --abbrev=0 $upstreamMain 2>$null
+    $latestTag = git describe --tags --abbrev=0 upstream/main 2>$null
     if (-not $latestTag) {
         Write-ErrorAndExit "No tag found on upstream/main"
     }
@@ -110,13 +88,6 @@ try {
 
     $fileSize = [math]::Round((Get-Item $exePath).Length / 1MB, 2)
     Write-Host "Executable size: $fileSize MB" -ForegroundColor Gray
-
-    Write-Step "Pushing changes to origin"
-    git push origin --force-with-lease
-    if ($LASTEXITCODE -ne 0) {
-        Write-ErrorAndExit "Failed to push to origin"
-    }
-    Write-Success "Pushed to origin"
 
     Write-Step "Creating release $releaseTag"
     if ($existingRelease) {
