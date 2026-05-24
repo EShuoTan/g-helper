@@ -2,6 +2,7 @@
 setlocal enabledelayedexpansion
 
 echo Fetching upstream...
+git fetch upstream
 git fetch upstream --tags
 if errorlevel 1 (
     echo Failed to fetch upstream
