@@ -16,6 +16,13 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo Updating local main to upstream/main...
+git branch -f main upstream/main
+if errorlevel 1 (
+    echo Failed to update local main
+    exit /b 1
+)
+
 git checkout feat/external-control
 if errorlevel 1 (
     echo Failed to checkout feat/external-control
