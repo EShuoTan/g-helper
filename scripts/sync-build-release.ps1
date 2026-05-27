@@ -46,7 +46,9 @@ try {
 
     Write-Step "Syncing with upstream (calling sync_fork.bat)"
     $syncScript = Join-Path $PSScriptRoot "sync_fork.bat"
-    & cmd /c $syncScript
+    $syncScriptCopy = Join-Path $env:TEMP "ghelper-sync_fork-$(Get-Date -Format 'yyyyMMddHHmmss').bat"
+    Copy-Item $syncScript $syncScriptCopy -Force
+    & cmd /c "`"$syncScriptCopy`" `"$repoRoot`""
     if ($LASTEXITCODE -ne 0) {
         Write-ErrorAndExit "Sync failed"
     }

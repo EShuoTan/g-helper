@@ -1,6 +1,18 @@
 @echo off
 setlocal enabledelayedexpansion
 
+set TARGET_BRANCH=feat/external-control
+
+if "%~1"=="" (
+    cd /d "%~dp0.."
+) else (
+    cd /d "%~1"
+)
+if errorlevel 1 (
+    echo Failed to enter repository root
+    exit /b 1
+)
+
 echo Fetching upstream...
 git fetch upstream
 git fetch upstream --tags
@@ -16,28 +28,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Updating local main to upstream/main...
-git branch -f main upstream/main
+git checkout %TARGET_BRANCH%
 if errorlevel 1 (
-    echo Failed to update local main
-    exit /b 1
-)
-
-echo Pushing main to origin...
-git push origin main --force-with-lease
-if errorlevel 1 (
-    echo Failed to push main to origin
-    exit /b 1
-)
-
-git checkout feat/external-control
-if errorlevel 1 (
-    echo Failed to checkout feat/external-control
+    echo Failed to checkout %TARGET_BRANCH%
     exit /b 1
 )
 
 echo Rebasing onto upstream/main...
-git rebase upstream/main
+git rebase --autostash upstream/main
 if errorlevel 1 (
     echo Rebase failed. Aborting...
     git rebase --abort
@@ -45,7 +43,7 @@ if errorlevel 1 (
 )
 
 echo Pushing to origin...
-git push origin --force-with-lease
+git push origin %TARGET_BRANCH% --force-with-lease
 if errorlevel 1 (
     echo Failed to push to origin
     exit /b 1
